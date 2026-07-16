@@ -65,7 +65,19 @@ function appendMessage(role, text, action = null) {
   scrollToBottom()
 }
 
-function openChatbot() {
+async function openChatbot() {
+  // check server health (ensures OPENAI API key present on server)
+  try {
+    const res = await fetch('/api/health')
+    if (!res.ok) {
+      appendMessage('bot', '가자잉 도우미 서버가 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.')
+      return
+    }
+  } catch (e) {
+    appendMessage('bot', '가자잉 도우미 서버에 연결할 수 없습니다. 네트워크를 확인해 주세요.')
+    return
+  }
+
   isOpen.value = true
   nextTick(() => {
     messageInputElement.value?.focus()
