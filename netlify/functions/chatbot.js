@@ -1,32 +1,43 @@
-import OpenAI from 'openai'
+export default {
+  async fetch(req) {
+    try {
+      const body = await req.json()
+      const message = (body.message || '').slice(0, 500)
+      if (!message) return new Response(JSON.stringify({ message: '질문을 입력해 주세요.' }), { status: 400 })
 
-export const handler = async (event) => {
-  try {
-    const body = JSON.parse(event.body || '{}')
-    const message = String(body.message || '').trim()
-    const history = Array.isArray(body.history) ? body.history : []
-    const currentPath = String(body.currentPath || '/')
+      const currentPath = String(body.currentPath || '/').slice(0, 200)
+      const history = Array.isArray(body.history) ? body.history.slice(-8) : []
 
-    if (!message) return { statusCode: 400, body: JSON.stringify({ message: '질문을 입력해 주세요.' }) }
+      // Build input for OpenAI Responses API (adjust model/format as needed)
+      const input = [
+        ...history.map(m => ({ role: m.role, content: m.content })),
+        { role: 'user', content: `현재 사용자가 보고 있는 주소: ${currentPath}\n\n사용자 질문:\n${message}` }
+      ]
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-    const result = await openai.responses.parse({
-      model: process.env.OPENAI_MODEL || 'gpt-5-mini',
-      instructions: /* CHATBOT_INSTRUCTIONS string */,
-      input: [
-        ...history.slice(-8),
-        { role: 'user', content: `현재 사용자가 보고 있는 주소: ${currentPath}\n\n사용자 질문:\n${message}` },
-      ],
-      // text format etc (same as server code)
-    })
+      const resp = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: process.env.OPENAI_MODEL || 'gpt-5-mini',
+          input
+          // 여기에 format 규칙(zod 등)이 필요하면 추가 구현 필요
+        })
+      })
 
-    if (!result.output_parsed) {
-      return { statusCode: 500, body: JSON.stringify({ message: '구조화된 응답을 받지 못했습니다.' }) }
+      if (!resp.ok) {
+        const errText = await resp.text().catch(() => '')
+        return new Response(JSON.stringify({ message: 'OpenAI 요청 실패', detail: errText }), { status: 502 })
+      }
+
+      const json = await resp.json()
+      // 간단: 전체 응답을 클라이언트에 전달
+      return new Response(JSON.stringify(json), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    } catch (err) {
+      console.error('chatbot function error', err)
+      return new Response(JSON.stringify({ message: '서버 에러' }), { status: 500 })
     }
-
-    return { statusCode: 200, body: JSON.stringify(result.output_parsed) }
-  } catch (err) {
-    console.error('chatbot function error', err)
-    return { statusCode: 500, body: JSON.stringify({ message: 'AI 응답 생성 실패' }) }
-  }
+  },
 }
