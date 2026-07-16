@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#0ea5a4"/>
+      <stop offset="1" stop-color="#ff6b35"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="32" fill="#ffffff"/>
+  <circle cx="60" cy="60" r="36" fill="url(#g)"/>
+  <g font-family="Apple SD Gothic Neo, Noto Sans KR, sans-serif" font-weight="800" fill="#0f1721">
+    <text x="110" y="95" font-size="56">가자</text>
+    <text x="110" y="150" font-size="56" fill="#ff6b35">잉</text>
+  </g>
+</svg>
